@@ -1,7 +1,7 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 2.6 FATAL_ERROR)
 CMAKE_POLICY(VERSION 2.6)
 
-FILE(GLOB src *.c *.h)
+FILE(GLOB src *.c *.h *.cpp *.hpp)
 FILE(GLOB luasrc *.lua)
 SET(luasrc ${luasrc} dartwrap.inl)
 
@@ -28,6 +28,18 @@ ELSEIF ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
     MESSAGE(STATUS "Using Visual Studio C++")
 ENDIF()
 
+
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall")
+find_package(DART 6.1.1 REQUIRED
+                  PATHS /home/fritz/torch/install
+                  COMPONENTS gui utils-urdf)
+
 ADD_TORCH_PACKAGE(dartwrap "${src}" "${luasrc}" "Dart Wrapper")
-TARGET_LINK_LIBRARIES(dartwrap)
+TARGET_LINK_LIBRARIES(dartwrap  PUBLIC ${DART_LIBRARIES})
+TARGET_INCLUDE_DIRECTORIES(dartwrap PUBLIC ${DART_INCLUDE_DIRS})
+
+
+add_executable(mlhole mlhole.cpp controller.cpp)
+target_include_directories(mlhole PUBLIC ${DART_INCLUDE_DIRS})
+target_link_libraries(mlhole PUBLIC ${DART_LIBRARIES})
 

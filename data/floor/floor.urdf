@@ -1,0 +1,30 @@
+<?xml version="1.0" ?>
+<!-- =================================================================================== -->
+<!-- |    Floor with a small hole -->
+<!-- =================================================================================== -->
+<robot name="floor" >
+  <link name="world"/>
+  <joint name="world_joint" type="fixed">
+    <parent link="world"/>
+    <child link="base_link"/>
+    <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
+  </joint>
+  <link name="base_link">
+    <visual>
+      <geometry>
+        <mesh filename="meshes/floor.dae"/>
+      </geometry>
+    </visual>
+    <collision>
+      <geometry>
+        <mesh filename="meshes/floor.dae"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="4.0"/>
+      <origin rpy="0 0 0" xyz="0.0 0.0 0.0"/>
+      <inertia ixx="0.00443333156" ixy="0.0" ixz="0.0" iyy="0.00443333156" iyz="0.0" izz="0.0072"/>
+    </inertial>
+  </link>
+</robot>
+
