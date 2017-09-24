@@ -34,12 +34,12 @@ find_package(DART 6.1.1 REQUIRED
                   PATHS /home/fritz/torch/install
                   COMPONENTS gui utils-urdf)
 
+
 ADD_TORCH_PACKAGE(dartwrap "${src}" "${luasrc}" "Dart Wrapper")
 TARGET_LINK_LIBRARIES(dartwrap  PUBLIC ${DART_LIBRARIES})
 TARGET_INCLUDE_DIRECTORIES(dartwrap PUBLIC ${DART_INCLUDE_DIRS})
-
+add_definitions(-DINSTALL_PREFIX="${LUAROCKS_INSTALL_PREFIX}")
 
 add_executable(mlhole mlhole.cpp controller.cpp)
 target_include_directories(mlhole PUBLIC ${DART_INCLUDE_DIRS})
 target_link_libraries(mlhole PUBLIC ${DART_LIBRARIES})
-

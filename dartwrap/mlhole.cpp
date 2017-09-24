@@ -20,6 +20,8 @@
 #include "controller.hpp"
 // glutMainLoopEvent was introduced in freeglut
 #include <GL/freeglut.h>
+// This are the interface functions to torch/lua
+#include "dartwrap.h"
 
 // The stepsize for changing position in x y z direction
 const double default_step = 0.01;
@@ -35,7 +37,7 @@ SkeletonPtr createFloor()
   // Load the Skeleton from a file
   dart::utils::DartLoader loader;
   SkeletonPtr floor =
-    loader.parseSkeleton("/home/fritz/dartwrap/data/floor/floor.urdf");
+    loader.parseSkeleton(INSTALL_PREFIX"/data/floor/floor.urdf");
   floor->setName("floor");
 
   // Position its base in a reasonable way
@@ -85,17 +87,26 @@ SkeletonPtr createStick()
   return stick;
 }
 
-
 class MyWindow : public dart::gui::SimWindow
 {
 public:
 
   /// Constructor
-  MyWindow(WorldPtr world,
-           Controller* ctrl)
+  MyWindow()
     : singlestep(false),
       CamRot(0.5, -0.3, -0.47, -0.67)
   {
+    // Create the stick
+    SkeletonPtr stick = createStick();
+
+    // Create a world and add the stick to the world
+    WorldPtr world(new World);
+    world->addSkeleton(stick);
+
+    // Add the floor
+    SkeletonPtr floor = createFloor();
+    world->addSkeleton(floor);
+
     setWorld(world);
     
     // Set the initial camera view
@@ -110,13 +121,16 @@ public:
     mFloor = world->getSkeleton("floor");
 
     // This is the controller which controls the stick
-    mController = ctrl;
+    mController = new Controller(stick);
     // Initial target position for the stick
     mTargetPosition << 30.0*M_PI/180.0, 0.0, 0.0, 0.2, 0.3, 0.2;
 
     // Start the simulation
     mSimulating = true;
   }
+
+    /// \brief Destructor
+  virtual ~MyWindow(){};
 
   void drawWorld() const {
     /* Enable filled polygons not just wireframes */
@@ -227,12 +241,13 @@ public:
       case 'd':
         mTargetPosition(5) -= default_step;
         break;
-
       case 'r':
         mTargetPosition(0) += default_angle * M_PI/180.0;
+        if (mTargetPosition(0) > M_PI) mTargetPosition(0) -= 2*M_PI;
         break;
       case 'f':
         mTargetPosition(0) -= default_angle * M_PI/180.0;
+	if (mTargetPosition(0) < -M_PI) mTargetPosition(0) += 2*M_PI;
         break;
       case 'm':
         singlestep = !singlestep;
@@ -310,32 +325,16 @@ protected:
 
   // Camera Rotation is coded in Quaternion of Trackball.
   Eigen::Quaterniond CamRot;
-  
 };
 
-MyWindow initSim()
-{
-  // Create the stick
-  SkeletonPtr stick = createStick();
-  
-  // Create a world and add the stick to the world
-  WorldPtr world(new World);
-  world->addSkeleton(stick);
-
-  // Add the floor
-  SkeletonPtr floor = createFloor();
-  world->addSkeleton(floor);
-
-  // Create a window for rendering the world and handling user input
-  MyWindow window(world,
-                  new Controller(stick));
-  return window;
-}
 
 int main(int argc, char* argv[])
 {
 
-  MyWindow window = initSim();
+  MyWindow *wp = new MyWindow;
+
+  int myargc = 0;
+  char *myargv = NULL;
 
   
   // Print instructions
@@ -351,8 +350,8 @@ int main(int argc, char* argv[])
   std::cout << "'f': Decrease rotation around x axis" << std::endl;
 
   // Initialize glut, initialize the window, and begin the glut event loop
-  glutInit(&argc, argv);
-  window.initWindow(640, 480, "Machine Learning Hole");
+  glutInit(&myargc, &myargv);
+  wp->initWindow(640, 480, "Machine Learning Hole");
   glutSetCursor(GLUT_CURSOR_CROSSHAIR);
 
   //sleep(2);
@@ -362,6 +361,49 @@ int main(int argc, char* argv[])
   
   while(1)
     glutMainLoopEvent();
-
-  
 }
+
+extern "C"
+{
+
+static bool glut_is_initialized = false;
+
+DartSim *dart_new(){
+  DartSim *ds = (DartSim *)malloc(sizeof(DartSim));
+  ds->simtime = 0.0;
+
+  MyWindow *wp;
+  int argc = 0;
+  char *argv = NULL;
+
+  // Create a window for rendering the world and handling user input
+  wp = new MyWindow;
+  if (!glut_is_initialized){
+    glutInit(&argc, &argv);
+    glut_is_initialized = true;
+  }
+  wp->initWindow(640, 480, "Machine Learning Hole");
+  if (!glut_is_initialized)
+    glutSetCursor(GLUT_CURSOR_CROSSHAIR);
+  
+  ds->mysim = reinterpret_cast<mlhole*>(wp);
+
+  return ds;
+}
+
+void dart_gc(DartSim *ds){
+  if (ds){
+    std::cout << "Destructor" << ds->simtime << std::endl;
+    delete reinterpret_cast<MyWindow *>(ds->mysim);
+    free(ds);
+  }
+}
+
+double dart_act(DartSim *ds,
+                int action){
+  ds->simtime += (double) action;
+  glutMainLoopEvent();
+  return ds->simtime;
+}
+
+} // extern "C"

@@ -17,6 +17,13 @@
 #ifndef DARTWRAP_H
 #define DARTWRAP_H
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif
 #include "dartwrap.inl"
+#ifdef __cplusplus
+} //extern "C"
+#endif
 
 #endif  // DARTWRAP_H

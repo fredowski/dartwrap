@@ -13,10 +13,11 @@
 
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>. */
-
+struct mlhole;
 struct DartSimS
   {
     double simtime;
+    struct mlhole *mysim;
   };
 
 typedef struct DartSimS DartSim;

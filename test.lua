@@ -28,6 +28,9 @@ function mytest.simple()
    tester:asserteq(r,5, "This should be 5")
    r = dw.play(p, 3)
    tester:asserteq(r,8, "This should be 8")
+   for i=1,1000000 do
+     r = dw.play(p,18)
+   end
 end
 
 tester:add(mytest)
